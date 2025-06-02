@@ -12,7 +12,6 @@ jobs:
       contents: write
 
     steps:
-      # Checkout the latest code from the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
