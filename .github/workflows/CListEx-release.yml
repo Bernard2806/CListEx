@@ -12,15 +12,19 @@ jobs:
       contents: write
 
     steps:
+      # Checkout the latest code from the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Compile C source file into an object file
       - name: Compile CListEx.c to object file
         run: gcc -c CListEx.c -o CListEx.o
 
+      # Create a static library archive from the object file
       - name: Create static library CListEx.a
         run: ar rcs CListEx.a CListEx.o
 
+      # Prepare release directory and package files into a zip archive
       - name: Prepare release files
         run: |
           mkdir release
@@ -28,16 +32,39 @@ jobs:
           cd release
           zip -r ../release.zip .
 
+      # Get total number of commits in the repository
+      - name: Get number of commits
+        id: commits_count
+        run: echo "commits_count=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+
+      # Calculate semantic version based on the number of commits
+      - name: Calculate version from commits count
+        id: version_calc
+        run: |
+          commits=${{ steps.commits_count.outputs.commits_count }}
+          if [ "$commits" -ge 1000 ]; then
+            version="1.0.0"
+          elif [ "$commits" -ge 100 ]; then
+            version="0.1.0"
+          elif [ "$commits" -ge 10 ]; then
+            version="0.0.1"
+          else
+            version="0.0.0"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      # Create a GitHub release with the dynamically calculated version as tag and name
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.sha }}
-          name: Release ${{ github.sha }}
+          tag_name: v${{ steps.version_calc.outputs.version }}
+          name: Release v${{ steps.version_calc.outputs.version }}
           body: Compiled static library CListEx.a with header CListEx.h
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Upload the release.zip file as an asset to the created release
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
         with:
