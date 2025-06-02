@@ -8,7 +8,7 @@ typedef struct node {
 
 typedef struct {
     node_t* head;
-    node_t* tail; // 🆕 for fast appending at the end
+    node_t* tail; // for fast appending at the end
 } list_t;
 
 // Create list
@@ -17,7 +17,7 @@ list_t* list_create();
 // Add to the end (as before)
 void list_add_end(list_t* list, void* data);
 
-// Add to the beginning 🆕
+// Add to the beginning
 void list_add_start(list_t* list, void* data);
 
 // Print list
