@@ -12,6 +12,7 @@ jobs:
       contents: write
 
     steps:
+      # Checkout the latest code from the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -31,16 +32,29 @@ jobs:
           cd release
           zip -r ../release.zip .
 
-      # Get total number of commits in the repository
-      - name: Get number of commits
-        id: commits_count
-        run: echo "commits_count=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+      # Get total commit count via GitHub API
+      - name: Get number of commits from GitHub API
+        id: commits_api
+        run: |
+          repo="${{ github.repository }}"
+          # Fetch the total commit count from the API for the main branch
+          commits_count=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$repo/commits?per_page=1&sha=main" \
+            -I | grep -Fi link | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
 
-      # Calculate semantic version based on the number of commits
+          # Fallback: if no Link header (repo with <1 commit), set to 1
+          if [ -z "$commits_count" ]; then
+            commits_count=1
+          fi
+
+          echo "commits_count=$commits_count" >> $GITHUB_OUTPUT
+
       - name: Calculate version from commits count
         id: version_calc
         run: |
-          commits=${{ steps.commits_count.outputs.commits_count }}
+          commits=${{ steps.commits_api.outputs.commits_count }}
           if [ "$commits" -ge 1000 ]; then
             version="1.0.0"
           elif [ "$commits" -ge 100 ]; then
