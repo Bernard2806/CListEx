@@ -22,7 +22,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir release
-          cp list.h liblist.a release/
+          cp CListEx.h CListEx.a release/
           cd release
           zip -r ../release.zip .
 
@@ -32,7 +32,7 @@ jobs:
         with:
           tag_name: ${{ github.sha }}
           name: Release ${{ github.sha }}
-          body: Compiled static library liblist.a with header list.h
+          body: Compiled static library CListEx.a with header CListEx.h
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
