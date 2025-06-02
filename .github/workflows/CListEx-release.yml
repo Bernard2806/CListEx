@@ -16,7 +16,7 @@ jobs:
       - name: Compile CListEx.c to object file
         run: gcc -c CListEx.c -o CListEx.o
 
-      - name: Create static library liblist.a
+      - name: Create static library CListEx.a
         run: ar rcs CListEx.a CListEx.o
 
       - name: Prepare release files
