@@ -1,4 +1,4 @@
-name: Build and Release Static Library
+name: 🏗️ Build and Release Static Library
 
 on:
   push:
@@ -12,49 +12,41 @@ jobs:
       contents: write
 
     steps:
-      # Checkout the latest code from the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # 📥 Checkout the latest code from the repository
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for commit counting
 
-      # Compile C source file into an object file
-      - name: Compile CListEx.c to object file
+      # 🔨 Compile C source file into an object file
+      - name: 🔨 Compile CListEx.c to object file
         run: gcc -c CListEx.c -o CListEx.o
 
-      # Create a static library archive from the object file
-      - name: Create static library CListEx.a
+      # 📚 Create a static library archive from the object file
+      - name: 📚 Create static library CListEx.a
         run: ar rcs CListEx.a CListEx.o
 
-      # Prepare release directory and package files into a zip archive
-      - name: Prepare release files
+      # 📦 Prepare release directory and package files into a zip archive
+      - name: 📦 Prepare release files
         run: |
-          mkdir release
+          mkdir -p release
           cp CListEx.h CListEx.a release/
           cd release
-          zip -r ../release.zip .
+          zip -r ../CListEx-library.zip .
 
-      # Get total commit count via GitHub API
-      - name: Get number of commits from GitHub API
-        id: commits_api
+      # 🔢 Get total commit count using git
+      - name: 🔢 Get commit count
+        id: commit_count
         run: |
-          repo="${{ github.repository }}"
-          # Fetch the total commit count from the API for the main branch
-          commits_count=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$repo/commits?per_page=1&sha=main" \
-            -I | grep -Fi link | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
-
-          # Fallback: if no Link header (repo with <1 commit), set to 1
-          if [ -z "$commits_count" ]; then
-            commits_count=1
-          fi
-
+          commits_count=$(git rev-list --count HEAD)
           echo "commits_count=$commits_count" >> $GITHUB_OUTPUT
+          echo "📊 Total commits: $commits_count"
 
-      - name: Calculate version from commits count
+      # 🏷️ Calculate version from commits count
+      - name: 🏷️ Calculate version from commits count
         id: version_calc
         run: |
-          commits=${{ steps.commits_api.outputs.commits_count }}
+          commits=${{ steps.commit_count.outputs.commits_count }}
           if [ "$commits" -ge 1000 ]; then
             version="1.0.0"
           elif [ "$commits" -ge 100 ]; then
@@ -65,22 +57,28 @@ jobs:
             version="0.0.0"
           fi
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "🎯 Generated version: v$version (based on $commits commits)"
 
-      # Create a GitHub release with the dynamically calculated version as tag and name
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      # 🚀 Create a GitHub release with the dynamically calculated version
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version_calc.outputs.version }}
-          name: Release v${{ steps.version_calc.outputs.version }}
-          body: Compiled static library CListEx.a with header CListEx.h
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Upload the release.zip file as an asset to the created release
-      - name: Upload release asset
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release.zip
+          name: 🎉 Release v${{ steps.version_calc.outputs.version }}
+          body: |
+            📚 **CListEx Static Library Release**
+            
+            This release contains:
+            - 🔧 Compiled static library `CListEx.a`
+            - 📄 Header file `CListEx.h`
+            - 📊 Based on ${{ steps.commit_count.outputs.commits_count }} commits
+            
+            ## 📥 How to use:
+            1. Download `CListEx-library.zip`
+            2. Extract the files
+            3. Link against `CListEx.a` in your C projects
+            4. Include `CListEx.h` in your source code
+          files: CListEx-library.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
